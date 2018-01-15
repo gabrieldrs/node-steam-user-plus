@@ -1,0 +1,21 @@
+{
+  "name": "steam-user-plus",
+  "version": "0.0.1",
+  "description": "An enhanced version of the Steam User object from the steam module. This contains a superset of functionalities compared to the one used in the steam module.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "steam",
+    "api",
+    "user"
+  ],
+  "author": "Gabriel R. Sezefredo <gabriel@sezefredo.com.br>",
+  "license": "MIT",
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.2",
+    "request": "^2.83.0",
+    "steam": "^1.4.0"
+  }
+}
