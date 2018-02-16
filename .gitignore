@@ -3,4 +3,5 @@ node_modules/
 .env
 npm-debug.log
 temp.*
+example.html
 package-lock.json

@@ -38,6 +38,7 @@ SteamWebLogOn.prototype.startWebSession = function (callback) {
 	}.bind(this));
 };
 
+//Private
 function generateInterface(iface,apiKey){
 	function request(httpmethod, method, args, callback) {
 		if (apiKey)
