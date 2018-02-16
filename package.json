@@ -1,6 +1,6 @@
 {
   "name": "steam-user-plus",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "An enhanced version of the Steam User object from the steam module. This contains a superset of functionalities compared to the one used in the steam module.",
   "main": "index.js",
   "scripts": {

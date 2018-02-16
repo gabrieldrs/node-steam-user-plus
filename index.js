@@ -40,28 +40,43 @@ SteamUserPlus.prototype.badgeList = function(cb){
         }
         self.emit('debug','Badge list downloaded successfully');
         var $ = Cheerio.load(body);
-        var badge_games = $('.badge_title_row').get(); 
+        var badge_games = $('.badge_row_inner').get(); 
         for (var i = 0 ; i < badge_games.length ; i++){
-            var game_info = badge_games[i];
-            var raw_progress = $('.progress_info_bold', game_info).html()
+            let game_info = $('.badge_title_row',badge_games[i]);
+            let raw_progress = $('.progress_info_bold', game_info).html()
             if (!raw_progress) continue;
-            var remaining_drops = raw_progress.split(' ')[0];
+            let remaining_drops = raw_progress.split(' ')[0];
             if (remaining_drops == 'No') remaining_drops = 0;
-    
-            var raw_title = $('.badge_title', game_info).text();
-            var game_title = raw_title.replace("View details","").trim();
-    
-            var info_dialog_id = $('.card_drop_info_dialog', game_info).attr('id');
-            var game_id = info_dialog_id.replace('card_drop_info_gamebadge_','').split('_')[0];
 
-            var raw_hours_played = $('.badge_title_stats_playtime',game_info).text();
-            var hours_played = raw_hours_played.split(" ")[0].trim() || '0';
+            let raw_title = $('.badge_title', game_info).text();
+            let game_title = raw_title.replace("View details","").trim();
+
+            let info_dialog_id = $('.card_drop_info_dialog', game_info).attr('id');
+            let game_id = info_dialog_id.replace('card_drop_info_gamebadge_','').split('_')[0];
+
+            let raw_hours_played = $('.badge_title_stats_playtime',game_info).text();
+            let hours_played = raw_hours_played.split(" ")[0].trim() || '0';
+
+            let unlocked_date = "Locked";
+            if ($('.badge_info_unlocked', badge_games[i]).length > 0){
+                unlocked_date = $('.badge_info_unlocked',badge_games[i]).text().replace(/Unlocked |[\n\t]/g,"");
+            }
+
+            let badge_level = 0;
+            if ($('.badge_info_title+div',badge_games[i]).length > 0){
+                let blevel = $('.badge_info_title+div',badge_games[i]).text();
+                let match = /Level ([0-9]+)/.exec(blevel);
+                if (match) badge_level = parseInt(match[1]);
+                
+            }
 
             returnList.push({
                 game_title: game_title,
                 game_id: game_id,
                 remaining_drops: parseInt(remaining_drops),
-                hours_played: parseFloat(hours_played)
+                hours_played: parseFloat(hours_played),
+                unlocked_date: unlocked_date || "Locked",
+                level: badge_level || 0
             });
         }
         self.emit('debug','Badge list parsed successfully');
