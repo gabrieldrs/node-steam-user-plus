@@ -1,11 +1,8 @@
 const util = require('util');
-const fs = require('fs');
 
 const Steam = require('steam');
 const SteamUser = Steam.SteamUser;
-const EMsg = Steam.EMsg;
 const EResult = Steam.EResult;
-var schema = Steam.Internal;
 
 const WebLogOn = require('./extensions/steam-web-log-on');
 
