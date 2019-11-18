@@ -1,4 +1,5 @@
 const SteamCrypto = require('steam-crypto');
+const https = require('https');
 
 function SteamWebLogOn (steamID, webLoginKey) {
 	this._steamID = steamID;
@@ -7,26 +8,19 @@ function SteamWebLogOn (steamID, webLoginKey) {
 
 SteamWebLogOn.prototype.startWebSession = function (callback) {
 	var sessionKey = SteamCrypto.generateSessionKey();
-	var steamAuthInterface = generateInterface('ISteamUserAuth');
+	var logOnRequest = customRequest();
 
 
 	var logOnProperties = {
 		steamid: this._steamID,
 		sessionkey: sessionKey.encrypted,
 		encrypted_loginkey: SteamCrypto.symmetricEncrypt(
-			new Buffer(this._webLoginKey),
+			Buffer.from(this._webLoginKey),
 			sessionKey.plain
 		)
 	};
 
-	steamAuthInterface.post('AuthenticateUser', logOnProperties, function (statusCode, body) {
-		if (statusCode !== 200) {
-			console.log("Error when trying to start web session");
-			console.log(statusCode);
-			console.log(body);
-			return;
-		}
-
+	logOnRequest(logOnProperties, (body) => {
 		this.cookies = [
 			'sessionid=' + this.sessionID,
 			'steamLogin=' + body.authenticateuser.token,
@@ -35,69 +29,54 @@ SteamWebLogOn.prototype.startWebSession = function (callback) {
 
 		callback(this.cookies);
 
-	}.bind(this));
+	}, (statusCode) => {
+		console.log("Error when trying to start web session");
+		console.log(statusCode);
+		console.log(body);
+	});
 };
 
 //Private
-function generateInterface(iface,apiKey){
-	function request(httpmethod, method, args, callback) {
-		if (apiKey)
-			args.key = apiKey;
-		
-		var data = Object.keys(args).map(function(key) {
-			var value = args[key];
-			if (Array.isArray(value))
-				return value.map(function(value, index) {
-					return key + '[' + index + ']=' + value;
-				}).join('&');
-			else if (Buffer.isBuffer(value))
-				return key + '=' + value.toString('hex').replace(/../g, '%$&');
-			else
-				return key + '=' + encodeURIComponent(value);
-		}).join('&');
-		
-		var options = {
-			hostname: 'api.steampowered.com',
-			path: '/' + iface + '/' + method + '/v1',
-			method: httpmethod
-		};
-		
-		if (httpmethod == 'GET')
-			options.path += '/?' + data;
-		else
-			options.headers = {
+function customRequest(){
+
+	const options = {
+		hostname: 'api.steampowered.com',
+		path: '/ISteamUserAuth/AuthenticateUser/v1',
+		method: 'POST',
+		headers: {
 			'Content-Type': 'application/x-www-form-urlencoded',
-			'Content-Length': data.length
-			};
+		}
+	};
+
+	return (args, success, error) => {
+
+		var data = encodePayload(args);
+
+		options.headers['Content-Length'] = data.length;
 		
-		var req = require('https').request(options, function(res) {
+		var req = https.request(options, res  => {
 			if (res.statusCode != 200) {
-				callback(res.statusCode);
-				return;
+				return error(res.statusCode);
 			}
 			var data = '';
-			res.on('data', function(chunk) {
-				data += chunk;
-			});
-			res.on('end', function() {
-				callback(res.statusCode, JSON.parse(data));
-			});
+			res.on('data', (chunk) =>  data += chunk);
+			res.on('end', () =>  success(JSON.parse(data)));
 		});
-		
-		req.on('error', function() {
-			request(httpmethod, method, version, args, callback);
-		});
-		
-		if (httpmethod == 'POST')
-			req.end(data);
-		else
-			req.end();
+		req.on('error', () => request(httpmethod, method, version, args, callback));
+
+		req.end(data);
 	}
-	  
-	return {
-		get: request.bind(null, 'GET'),
-		post: request.bind(null, 'POST')
-	};
+}
+
+function encodePayload(payload) {
+	return Object.keys(payload).map(function(key) {
+        const val = payload[key];
+		if (Array.isArray(val))
+			return val.map((val_, key_)  => key + '[' + key_ + ']=' + val_).join('&');
+		else if (Buffer.isBuffer(val))
+			return key + '=' + val.toString('hex').replace(/../g, '%$&');
+		return key + '=' + encodeURIComponent(val);
+	}).join('&');
 }
 
 module.exports = SteamWebLogOn;
