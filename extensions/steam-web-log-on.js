@@ -1,5 +1,5 @@
 const SteamCrypto = require('steam-crypto');
-const https = require('https');
+const request = require('request-promise-native');
 
 function SteamWebLogOn (steamID, webLoginKey) {
 	this._steamID = steamID;
@@ -29,54 +29,34 @@ SteamWebLogOn.prototype.startWebSession = function (callback) {
 
 		callback(this.cookies);
 
-	}, (statusCode) => {
+	}, (msg) => {
 		console.log("Error when trying to start web session");
-		console.log(statusCode);
-		console.log(body);
+		console.log(msg);
 	});
 };
 
 //Private
 function customRequest(){
 
-	const options = {
-		hostname: 'api.steampowered.com',
-		path: '/ISteamUserAuth/AuthenticateUser/v1',
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/x-www-form-urlencoded',
-		}
+	const reOptions = {
+		uri: 'https://api.steampowered.com/ISteamUserAuth/AuthenticateUser/v1',
+		qsStringifyOptions: { econder: bufferEncoder},
+		json: true
 	};
 
 	return (args, success, error) => {
 
-		var data = encodePayload(args);
-
-		options.headers['Content-Length'] = data.length;
+		reOptions.form = args;
 		
-		var req = https.request(options, res  => {
-			if (res.statusCode != 200) {
-				return error(res.statusCode);
-			}
-			var data = '';
-			res.on('data', (chunk) =>  data += chunk);
-			res.on('end', () =>  success(JSON.parse(data)));
-		});
-		req.on('error', () => request(httpmethod, method, version, args, callback));
+		request.post(reOptions)
+			.then(res  =>  success(res))
+			.catch(err => error(err));
 
-		req.end(data);
 	}
 }
 
-function encodePayload(payload) {
-	return Object.keys(payload).map(function(key) {
-        const val = payload[key];
-		if (Array.isArray(val))
-			return val.map((val_, key_)  => key + '[' + key_ + ']=' + val_).join('&');
-		else if (Buffer.isBuffer(val))
-			return key + '=' + val.toString('hex').replace(/../g, '%$&');
-		return key + '=' + encodeURIComponent(val);
-	}).join('&');
+function bufferEncoder(val, defaultEncoder) {
+	return Buffer.isBuffer(val) ? val.toString('hex').replace(/../g, '%$&') : defaultEncoder(val)
 }
 
 module.exports = SteamWebLogOn;
